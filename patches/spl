@@ -1,0 +1,877 @@
+Bottom: 5b5f08a6caf0def0aa3e31ecd61794ef0a9c6c49
+Top:    6f3cd4d1ed4334f29ea6d01ade9bf8056163bf45
+Author: Jon Smirl <jonsmirl@terra>
+Date:   2012-03-17 22:26:24 -0400
+
+Changes to support SPL
+
+
+---
+
+diff --git a/arch/arm/cpu/arm926ejs/cpu.c b/arch/arm/cpu/arm926ejs/cpu.c
+index 5c902df..73f0512 100644
+--- a/arch/arm/cpu/arm926ejs/cpu.c
++++ b/arch/arm/cpu/arm926ejs/cpu.c
+@@ -37,6 +37,10 @@ static void cache_flush(void);
+ 
+ int cleanup_before_linux (void)
+ {
++#ifdef CONFIG_USB_DEVICE
++	extern void udc_shutdown (void);
++	udc_shutdown();
++#endif
+ 	/*
+ 	 * this function is called just before we call linux
+ 	 * it prepares the processor for linux
+diff --git a/arch/arm/cpu/arm926ejs/start.S b/arch/arm/cpu/arm926ejs/start.S
+index 6a09c02..b658b12 100644
+--- a/arch/arm/cpu/arm926ejs/start.S
++++ b/arch/arm/cpu/arm926ejs/start.S
+@@ -64,6 +64,13 @@ _start:
+ 	b	reset
+ #endif
+ #ifdef CONFIG_SPL_BUILD
++#ifdef CONFIG_LPC313x_BOOT_HEADER
++        .word 0x41676d69        /* image magic number, imgA */
++        .word 0,0,0,0,0
++        .word 0x0000000A        /*Plain text no CRC check*/
++	.word (__initial_boot_image_size)       /* image length */
++        .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
++#else
+ /* No exception handlers in preloader */
+ 	ldr	pc, _hang
+ 	ldr	pc, _hang
+@@ -83,6 +90,7 @@ _hang:
+ 	.word	0x12345678
+ 	.word	0x12345678
+ 	.word	0x12345678
++#endif
+ #else
+ 	ldr	pc, _undefined_instruction
+ 	ldr	pc, _software_interrupt
+@@ -230,6 +238,7 @@ relocate_code:
+ stack_setup:
+ 	mov	sp, r4
+ 
++	mov	r9, #0x00000000		/* relocation offset starts at zero */
+ 	adr	r0, _start
+ 	sub	r9, r6, r0		/* r9 <- relocation offset */
+ 	cmp	r0, r6
+@@ -292,7 +301,9 @@ clear_bss:
+ 	ldr	r1, =__bss_end__
+ #else
+ 	ldr	r0, _bss_start_ofs
++//	add	r0, r0, r9
+ 	ldr	r1, _bss_end_ofs
++//	add	r1, r1, r9
+ 	mov	r4, r6			/* reloc addr */
+ 	add	r0, r0, r4
+ 	add	r1, r1, r4
+diff --git a/arch/arm/include/asm/mach-types.h b/arch/arm/include/asm/mach-types.h
+index 2d5c3bc..d992d4f 100644
+--- a/arch/arm/include/asm/mach-types.h
++++ b/arch/arm/include/asm/mach-types.h
+@@ -11,6 +11,9 @@
+ extern unsigned int __machine_arch_type;
+ #endif
+ 
++#define MACH_TYPE_EA3152               9996
++#define MACH_TYPE_EA313X               9997
++
+ /* see arch/arm/kernel/arch.c for a description of these */
+ #define MACH_TYPE_EBSA110              0
+ #define MACH_TYPE_RISCPC               1
+@@ -14222,6 +14225,30 @@ extern unsigned int __machine_arch_type;
+ # define machine_is_omap5_sevm()      (0)
+ #endif
+ 
++#ifdef CONFIG_MACH_EA313X
++# ifdef machine_arch_type
++#  undef machine_arch_type
++#  define machine_arch_type	__machine_arch_type
++# else
++#  define machine_arch_type	MACH_TYPE_EA313X
++# endif
++# define machine_is_ea313x()	(machine_arch_type == MACH_TYPE_EA313X)
++#else
++# define machine_is_ea313x()	(0)
++#endif
++
++#ifdef CONFIG_MACH_EA3152
++# ifdef machine_arch_type
++#  undef machine_arch_type
++#  define machine_arch_type	__machine_arch_type
++# else
++#  define machine_arch_type	MACH_TYPE_EA3152
++# endif
++# define machine_is_ea3152()	(machine_arch_type == MACH_TYPE_EA3152)
++#else
++# define machine_is_ea3152()	(0)
++#endif
++
+ /*
+  * These have not yet been registered
+  */
+diff --git a/arch/arm/lib/board.c b/arch/arm/lib/board.c
+index 3d78274..ab0dc86 100644
+--- a/arch/arm/lib/board.c
++++ b/arch/arm/lib/board.c
+@@ -38,6 +38,8 @@
+  * FIQ Stack: 00ebef7c
+  */
+ 
++#define DEBUG
++
+ #include <common.h>
+ #include <command.h>
+ #include <malloc.h>
+@@ -528,7 +530,6 @@ void board_init_r(gd_t *id, ulong dest_addr)
+ 	AT91F_DataflashInit();
+ 	dataflash_print_info();
+ #endif
+-
+ 	/* initialize environment */
+ 	env_relocate();
+ 
+diff --git a/boards.cfg b/boards.cfg
+index 1e5b3e0..77c385f 100644
+--- a/boards.cfg
++++ b/boards.cfg
+@@ -153,6 +153,8 @@ openrd_ultimate              arm         arm926ejs   openrd              Marvell
+ rd6281a                      arm         arm926ejs   -                   Marvell        kirkwood
+ sheevaplug                   arm         arm926ejs   -                   Marvell        kirkwood
+ dockstar                     arm         arm926ejs   -                   Seagate        kirkwood
++ea3131                       arm         arm926ejs   ea3131              ElecArts       lpc313x
++ea3152                       arm         arm926ejs   ea3131              ElecArts       lpc313x
+ jadecpu                      arm         arm926ejs   jadecpu             syteco         mb86r0x
+ mx25pdk                      arm         arm926ejs   mx25pdk             freescale      mx25		mx25pdk:IMX_CONFIG=board/freescale/mx25pdk/imximage.cfg
+ tx25                         arm         arm926ejs   tx25                karo           mx25
+diff --git a/common/Makefile b/common/Makefile
+index 2d9ae8c..9819d0a 100644
+--- a/common/Makefile
++++ b/common/Makefile
+@@ -26,12 +26,14 @@ include $(TOPDIR)/config.mk
+ LIB	= $(obj)libcommon.o
+ 
+ # core
++COBJS-y += dlmalloc.o
++COBJS-y += image.o
++
+ ifndef CONFIG_SPL_BUILD
+ COBJS-y += main.o
+ COBJS-y += command.o
+ COBJS-y += exports.o
+ COBJS-$(CONFIG_SYS_HUSH_PARSER) += hush.o
+-COBJS-y += image.o
+ COBJS-y += s_record.o
+ COBJS-$(CONFIG_SERIAL_MULTI) += serial.o
+ COBJS-y += xyzModem.o
+diff --git a/common/cmd_nand.c b/common/cmd_nand.c
+index 3e2edb8..4cdf58a 100644
+--- a/common/cmd_nand.c
++++ b/common/cmd_nand.c
+@@ -189,12 +189,25 @@ static int arg_off(const char *arg, int *idx, loff_t *off, loff_t *maxsize)
+ static int arg_off_size(int argc, char *const argv[], int *idx,
+ 			loff_t *off, loff_t *size)
+ {
+-	int ret;
++	int ret = 0;
+ 	loff_t maxsize;
+ 
+ 	if (argc == 0) {
+ 		*off = 0;
+ 		*size = nand_info[*idx].size;
++#ifdef CONFIG_LPC313X
++		printf("\nFor LPC313X based board, Do you want to erase block 0: <y/n>\n");
++		while(1) {
++			ret = getc();
++			if(ret != 0)	
++				break;
++		}
++
++		if(ret != 'y') {
++			*off = 0x20000;
++			*size -= 0x20000;
++		}
++#endif
+ 		goto print;
+ 	}
+ 
+diff --git a/common/dlmalloc.c b/common/dlmalloc.c
+index c645d73..9cef225 100644
+--- a/common/dlmalloc.c
++++ b/common/dlmalloc.c
+@@ -1521,11 +1521,13 @@ void *sbrk(ptrdiff_t increment)
+ 
+ void mem_malloc_init(ulong start, ulong size)
+ {
+-	mem_malloc_start = start;
+-	mem_malloc_end = start + size;
+-	mem_malloc_brk = start;
++	if(mem_malloc_start == 0) {
++		mem_malloc_start = start;
++		mem_malloc_end = start + size;
++		mem_malloc_brk = start;
+ 
+-	memset((void *)mem_malloc_start, 0, size);
++		memset((void *)mem_malloc_start, 0, size);
++	}
+ }
+ 
+ /* field-extraction macros */
+diff --git a/drivers/mtd/nand/Makefile b/drivers/mtd/nand/Makefile
+index 36ee454..887fac2 100644
+--- a/drivers/mtd/nand/Makefile
++++ b/drivers/mtd/nand/Makefile
+@@ -31,7 +31,7 @@ ifdef CONFIG_SPL_NAND_SIMPLE
+ COBJS-y += nand_spl_simple.o
+ endif
+ ifdef CONFIG_SPL_NAND_LOAD
+-COBJS-y	+= nand_spl_load.o
++COBJS-y += nand_spl_load.o
+ endif
+ else
+ COBJS-y += nand.o
+@@ -63,6 +63,7 @@ COBJS-$(CONFIG_NAND_SPEAR) += spr_nand.o
+ COBJS-$(CONFIG_NAND_OMAP_GPMC) += omap_gpmc.o
+ COBJS-$(CONFIG_NAND_PLAT) += nand_plat.o
+ endif
++COBJS-$(CONFIG_NAND_LPC313X) += lpc313x_nand.o
+ 
+ COBJS	:= $(COBJS-y)
+ SRCS	:= $(COBJS:.o=.c)
+diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
+index 27f6c77..e2806e6 100644
+--- a/drivers/mtd/nand/nand_base.c
++++ b/drivers/mtd/nand/nand_base.c
+@@ -2540,7 +2540,7 @@ static void nand_flash_detect_non_onfi(struct mtd_info *mtd,
+ /*
+  * Get the flash and manufacturer id and lookup if the type is supported
+  */
+-static const struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
++const struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
+ 						  struct nand_chip *chip,
+ 						  int busw,
+ 						  int *maf_id, int *dev_id,
+diff --git a/drivers/net/dm9000x.c b/drivers/net/dm9000x.c
+index 0424110..105abae 100644
+--- a/drivers/net/dm9000x.c
++++ b/drivers/net/dm9000x.c
+@@ -264,7 +264,7 @@ dm9000_reset(void)
+ 	/* Step 1: Power internal PHY by writing 0 to GPIO0 pin */
+ 	DM9000_iow(DM9000_GPR, 0);
+ 	/* Step 2: Software reset */
+-	DM9000_iow(DM9000_NCR, (NCR_LBK_INT_MAC | NCR_RST));
++	DM9000_iow(DM9000_NCR, NCR_RST);
+ 
+ 	do {
+ 		DM9000_DBG("resetting the DM9000, 1st reset\n");
+@@ -272,7 +272,7 @@ dm9000_reset(void)
+ 	} while (DM9000_ior(DM9000_NCR) & 1);
+ 
+ 	DM9000_iow(DM9000_NCR, 0);
+-	DM9000_iow(DM9000_NCR, (NCR_LBK_INT_MAC | NCR_RST)); /* Issue a second reset */
++	DM9000_iow(DM9000_NCR, NCR_RST); /* Issue a second reset */
+ 
+ 	do {
+ 		DM9000_DBG("resetting the DM9000, 2nd reset\n");
+@@ -372,7 +372,7 @@ static int dm9000_init(struct eth_device *dev, bd_t *bd)
+ 	while (!(dm9000_phy_read(1) & 0x20)) {	/* autonegation complete bit */
+ 		udelay(1000);
+ 		i++;
+-		if (i == 10000) {
++		if (i == 1000000) {
+ 			printf("could not establish link\n");
+ 			return 0;
+ 		}
+diff --git a/drivers/serial/usbtty.c b/drivers/serial/usbtty.c
+index a263b2c..406bdce 100644
+--- a/drivers/serial/usbtty.c
++++ b/drivers/serial/usbtty.c
+@@ -29,6 +29,9 @@
+ #include "usbtty.h"
+ #include "usb_cdc_acm.h"
+ #include "usbdescriptors.h"
++#include <usb_dfu_descriptors.h>
++#include <usb_dfu.h>
++
+ 
+ #ifdef DEBUG
+ #define TTYDBG(fmt,args...)\
+@@ -84,7 +87,7 @@ static struct usb_endpoint_instance endpoint_instance[NUM_ENDPOINTS+1];
+  * Global flag
+  */
+ int usbtty_configured_flag = 0;
+-
++int usbtty_init_done = 0;
+ /*
+  * Serial number
+  */
+@@ -102,7 +105,7 @@ extern struct usb_string_descriptor **usb_strings;
+ static unsigned short rx_endpoint = 0;
+ static unsigned short tx_endpoint = 0;
+ static unsigned short interface_count = 0;
+-static struct usb_string_descriptor *usbtty_string_table[STR_COUNT];
++static struct usb_string_descriptor *usbtty_string_table[NUM_STRINGS];
+ 
+ /* USB Descriptor Strings */
+ static u8 wstrLang[4] = {4,USB_DT_STRING,0x9,0x4};
+@@ -152,6 +155,11 @@ struct acm_config_desc {
+ 	/* Slave Interface */
+ 	struct usb_interface_descriptor data_class_interface;
+ 	struct usb_endpoint_descriptor data_endpoints[NUM_ENDPOINTS-1];
++#ifdef CONFIG_USB_DFU
++	struct usb_interface_descriptor uif_dfu;
++	struct usb_dfu_func_descriptor func_dfu;
++#endif
++
+ } __attribute__((packed));
+ 
+ static struct acm_config_desc acm_configuration_descriptors[NUM_CONFIGS] = {
+@@ -162,7 +170,11 @@ static struct acm_config_desc acm_configuration_descriptors[NUM_CONFIGS] = {
+ 			.bDescriptorType = USB_DT_CONFIG,
+ 			.wTotalLength =
+ 				cpu_to_le16(sizeof(struct acm_config_desc)),
++#ifdef CONFIG_USB_DFU
++			.bNumInterfaces = NUM_ACM_INTERFACES +1,
++#else
+ 			.bNumInterfaces = NUM_ACM_INTERFACES,
++#endif
+ 			.bConfigurationValue = 1,
+ 			.iConfiguration = STR_CONFIG,
+ 			.bmAttributes =
+@@ -261,6 +273,11 @@ static struct acm_config_desc acm_configuration_descriptors[NUM_CONFIGS] = {
+ 				.bInterval		= 0xFF,
+ 			},
+ 		},
++#ifdef CONFIG_USB_DFU
++		/* Interface 3 */
++		.uif_dfu = DFU_RT_IF_DESC,
++		.func_dfu = DFU_FUNC_DESC,
++#endif
+ 	},
+ };
+ 
+@@ -371,7 +388,7 @@ static int fill_buffer (circbuf_t * buf);
+ void usbtty_poll (void);
+ 
+ /* utility function for converting char* to wide string used by USB */
+-static void str2wide (char *str, u16 * wide)
++void str2wide (char *str, u16 * wide)
+ {
+ 	int i;
+ 	for (i = 0; i < strlen (str) && str[i]; i++){
+@@ -524,55 +541,68 @@ int drv_usbtty_init (void)
+ 	char * tt;
+ 	int snlen;
+ 
+-	/* Ger seiral number */
+-	if (!(sn = getenv("serial#"))) {
++	if(usbtty_init_done == 0) {
++#ifdef CONFIG_LPC313X
+ 		sn = "000000000000";
+-	}
+-	snlen = strlen(sn);
+-	if (snlen > sizeof(serial_number) - 1) {
+-		printf ("Warning: serial number %s is too long (%d > %lu)\n",
+-			sn, snlen, (ulong)(sizeof(serial_number) - 1));
+-		snlen = sizeof(serial_number) - 1;
+-	}
+-	memcpy (serial_number, sn, snlen);
+-	serial_number[snlen] = '\0';
+-
+-	/* Decide on which type of UDC device to be.
+-	 */
++#else
++		/* Ger seiral number */
++		if (!(sn = getenv("serial#"))) {
++			sn = "000000000000";
++		}
++#endif
++		snlen = strlen(sn);
++		if (snlen > sizeof(serial_number) - 1) {
++			printf ("Warning: serial number %s is too long (%d > %lu)\n",
++					sn, snlen, (ulong)(sizeof(serial_number) - 1));
++			snlen = sizeof(serial_number) - 1;
++		}
++		memcpy (serial_number, sn, snlen);
++		serial_number[snlen] = '\0';
+ 
+-	if(!(tt = getenv("usbtty"))) {
+-		tt = "generic";
+-	}
+-	usbtty_init_terminal_type(strcmp(tt,"cdc_acm"));
++		/* Decide on which type of UDC device to be.
++		*/
+ 
+-	/* prepare buffers... */
+-	buf_init (&usbtty_input, USBTTY_BUFFER_SIZE);
+-	buf_init (&usbtty_output, USBTTY_BUFFER_SIZE);
++#ifdef CONFIG_LPC313X
++		usbtty_init_terminal_type(0);
++#else
++		if(!(tt = getenv("usbtty"))) {
++			tt = "generic";
++		}
++		usbtty_init_terminal_type(strcmp(tt,"cdc_acm"));
++#endif
++		/* prepare buffers... */
++		buf_init (&usbtty_input, USBTTY_BUFFER_SIZE);
++		buf_init (&usbtty_output, USBTTY_BUFFER_SIZE);
+ 
+-	/* Now, set up USB controller and infrastructure */
+-	udc_init ();		/* Basic USB initialization */
++		/* Now, set up USB controller and infrastructure */
++		udc_init ();		/* Basic USB initialization */
+ 
+-	usbtty_init_strings ();
+-	usbtty_init_instances ();
++		usbtty_init_strings ();
++		usbtty_init_instances ();
+ 
+-	usbtty_init_endpoints ();
++		udc_startup_events (device_instance);/* Enable dev, init udc pointers */
++		udc_connect ();		/* Enable pullup for host detection */
+ 
+-	udc_startup_events (device_instance);/* Enable dev, init udc pointers */
+-	udc_connect ();		/* Enable pullup for host detection */
++		usbtty_init_endpoints ();
+ 
+-	/* Device initialization */
+-	memset (&usbttydev, 0, sizeof (usbttydev));
++		/* Device initialization */
++		memset (&usbttydev, 0, sizeof (usbttydev));
+ 
+-	strcpy (usbttydev.name, "usbtty");
+-	usbttydev.ext = 0;	/* No extensions */
+-	usbttydev.flags = DEV_FLAGS_INPUT | DEV_FLAGS_OUTPUT;
+-	usbttydev.tstc = usbtty_tstc;	/* 'tstc' function */
+-	usbttydev.getc = usbtty_getc;	/* 'getc' function */
+-	usbttydev.putc = usbtty_putc;	/* 'putc' function */
+-	usbttydev.puts = usbtty_puts;	/* 'puts' function */
++		strcpy (usbttydev.name, "usbtty");
++		usbttydev.ext = 0;	/* No extensions */
++		usbttydev.flags = DEV_FLAGS_INPUT | DEV_FLAGS_OUTPUT;
++		usbttydev.tstc = usbtty_tstc;	/* 'tstc' function */
++		usbttydev.getc = usbtty_getc;	/* 'getc' function */
++		usbttydev.putc = usbtty_putc;	/* 'putc' function */
++		usbttydev.puts = usbtty_puts;	/* 'puts' function */
+ 
++		usbtty_init_done = 1;
++	}
++#ifndef CONFIG_USB_DFU
+ 	rc = stdio_register (&usbttydev);
+-
++#else
++	rc = 0;
++#endif
+ 	return (rc == 0) ? 1 : rc;
+ }
+ 
+@@ -643,6 +673,9 @@ static void usbtty_init_instances (void)
+ 	device_instance->bus = bus_instance;
+ 	device_instance->configurations = NUM_CONFIGS;
+ 	device_instance->configuration_instance_array = config_instance;
++#ifdef CONFIG_USB_DFU
++	dfu_init_instance(device_instance);
++#endif
+ 
+ 	/* initialize bus instance */
+ 	memset (bus_instance, 0, sizeof (struct usb_bus_instance));
+diff --git a/drivers/serial/usbtty.h b/drivers/serial/usbtty.h
+index e449cd7..f753681 100644
+--- a/drivers/serial/usbtty.h
++++ b/drivers/serial/usbtty.h
+@@ -33,6 +33,8 @@
+ #include <usb/musb_udc.h>
+ #elif defined(CONFIG_CPU_PXA27X)
+ #include <usb/pxa27x_udc.h>
++#elif defined(CONFIG_LPC313X)
++#include <usb/lpc313x_udc.h>
+ #elif defined(CONFIG_SPEAR3XX) || defined(CONFIG_SPEAR600)
+ #include <usb/spr_udc.h>
+ #endif
+@@ -84,4 +86,10 @@
+ #define STR_CTRL_INTERFACE	0x06
+ #define STR_COUNT		0x07
+ 
++#ifdef CONFIG_USB_DFU
++#define NUM_STRINGS		DFU_STR_COUNT
++#else
++#define NUM_STRINGS		STR_COUNT
++#endif
++
+ #endif
+diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
+index 6f389f0..bee4da4 100644
+--- a/drivers/spi/Makefile
++++ b/drivers/spi/Makefile
+@@ -40,6 +40,7 @@ COBJS-$(CONFIG_MXC_SPI) += mxc_spi.o
+ COBJS-$(CONFIG_MXS_SPI) += mxs_spi.o
+ COBJS-$(CONFIG_OC_TINY_SPI) += oc_tiny_spi.o
+ COBJS-$(CONFIG_OMAP3_SPI) += omap3_spi.o
++COBJS-$(CONFIG_LPC313X_SPI) += lpc313x_spi.o
+ COBJS-$(CONFIG_SOFT_SPI) += soft_spi.o
+ COBJS-$(CONFIG_SH_SPI) += sh_spi.o
+ COBJS-$(CONFIG_FSL_ESPI) += fsl_espi.o
+diff --git a/drivers/usb/gadget/Makefile b/drivers/usb/gadget/Makefile
+index 64b091f..1944799 100644
+--- a/drivers/usb/gadget/Makefile
++++ b/drivers/usb/gadget/Makefile
+@@ -43,6 +43,8 @@ COBJS-$(CONFIG_OMAP1510) += omap1510_udc.o
+ COBJS-$(CONFIG_OMAP1610) += omap1510_udc.o
+ COBJS-$(CONFIG_MPC885_FAMILY) += mpc8xx_udc.o
+ COBJS-$(CONFIG_CPU_PXA27X) += pxa27x_udc.o
++COBJS-$(CONFIG_LPC313X) += lpc313x_udc.o
++COBJS-$(CONFIG_USB_DFU) += dfu.o
+ COBJS-$(CONFIG_SPEARUDC) += spr_udc.o
+ endif
+ endif
+diff --git a/drivers/usb/gadget/core.c b/drivers/usb/gadget/core.c
+index 4f2ebab..d91d00f 100644
+--- a/drivers/usb/gadget/core.c
++++ b/drivers/usb/gadget/core.c
+@@ -31,6 +31,7 @@
+ 
+ #include <malloc.h>
+ #include <usbdevice.h>
++#include <usb_dfu.h>
+ 
+ #define MAX_INTERFACES 2
+ 
+@@ -209,6 +210,10 @@ struct usb_alternate_instance *usbd_device_alternate_instance (struct usb_device
+  */
+ struct usb_device_descriptor *usbd_device_device_descriptor (struct usb_device_instance *device, int port)
+ {
++#ifdef CONFIG_USB_DFU
++	if (device->dfu_state != DFU_STATE_appIDLE)
++		return device->dfu_dev_desc;
++#endif
+ 	return (device->device_descriptor);
+ }
+ 
+@@ -229,6 +234,10 @@ struct usb_configuration_descriptor *usbd_device_configuration_descriptor (struc
+ 	if (!(configuration_instance = usbd_device_configuration_instance (device, port, configuration))) {
+ 		return NULL;
+ 	}
++#ifdef CONFIG_USB_DFU
++	if (device->dfu_state != DFU_STATE_appIDLE)
++		return (&device->dfu_cfg_desc->ucfg);
++#endif
+ 	return (configuration_instance->configuration_descriptor);
+ }
+ 
+@@ -250,6 +259,13 @@ struct usb_interface_descriptor *usbd_device_interface_descriptor (struct usb_de
+ 	if (!(interface_instance = usbd_device_interface_instance (device, port, configuration, interface))) {
+ 		return NULL;
+ 	}
++#ifdef CONFIG_USB_DFU
++	if (device->dfu_state != DFU_STATE_appIDLE) {
++		if (alternate < 0 || alternate >= DFU_NUM_ALTERNATES)
++			return NULL;
++		return &device->dfu_cfg_desc->uif[alternate];
++	}
++#endif
+ 	if ((alternate < 0) || (alternate >= interface_instance->alternates)) {
+ 		return NULL;
+ 	}
+@@ -680,4 +696,7 @@ void usbd_device_event_irq (struct usb_device_instance *device, usb_device_event
+ 		/* usbdbg("calling device->event"); */
+ 		device->event(device, event, data);
+ 	}
++#ifdef CONFIG_USB_DFU
++	dfu_event(device, event, data);
++#endif
+ }
+diff --git a/drivers/usb/gadget/ep0.c b/drivers/usb/gadget/ep0.c
+index 22499d3..13f3c24 100644
+--- a/drivers/usb/gadget/ep0.c
++++ b/drivers/usb/gadget/ep0.c
+@@ -51,8 +51,14 @@
+  */
+ 
+ #include <common.h>
++DECLARE_GLOBAL_DATA_PTR;
++
+ #include <usbdevice.h>
+ 
++#ifdef CONFIG_USB_DFU
++#include <usb_dfu.h>
++#endif
++
+ #if 0
+ #define dbg_ep0(lvl,fmt,args...) serial_printf("[%s] %s:%d: "fmt"\n",__FILE__,__FUNCTION__,__LINE__,##args)
+ #else
+@@ -274,8 +280,26 @@ static int ep0_get_descriptor (struct usb_device_instance *device,
+ 	case USB_DESCRIPTOR_TYPE_ENDPOINT:
+ 		serial_printf("USB_DESCRIPTOR_TYPE_ENDPOINT - error not implemented\n");
+ 		return -1;
++	/* This really means "Class Specific Descriptor #1 == USB_DT_DFU */
+ 	case USB_DESCRIPTOR_TYPE_HID:
++#ifdef CONFIG_USB_DFU
+ 		{
++			int bNumInterface =
++				le16_to_cpu(urb->device_request.wIndex);
++
++			/* In runtime mode, we only respond to the DFU INTERFACE,
++			 * whereas in DFU mode, we respond for all intrfaces */
++			if (device->dfu_state != DFU_STATE_appIDLE &&
++					device->dfu_state != DFU_STATE_appDETACH ||
++					bNumInterface == CONFIG_USBD_DFU_INTERFACE) {
++				urb->actual_length = sizeof(struct usb_dfu_func_descriptor);
++				memcpy(urb->buffer,(void *)&device->dfu_cfg_desc->func_dfu,
++						urb->actual_length);
++			} else
++				return -1;
++		}
++#else /* CONFIG_USB_DFU */
++
+ 			serial_printf("USB_DESCRIPTOR_TYPE_HID - error not implemented\n");
+ 			return -1;	/* unsupported at this time */
+ #if 0
+@@ -286,22 +310,23 @@ static int ep0_get_descriptor (struct usb_device_instance *device,
+ 			struct usb_class_descriptor *class_descriptor;
+ 
+ 			if (!(class_descriptor =
+-			      usbd_device_class_descriptor_index (device,
+-								  port, 0,
+-								  bNumInterface,
+-								  bAlternateSetting,
+-								  class))
+-			    || class_descriptor->descriptor.hid.bDescriptorType != USB_DT_HID) {
++						usbd_device_class_descriptor_index (device,
++							port, 0,
++							bNumInterface,
++							bAlternateSetting,
++							class))
++					|| class_descriptor->descriptor.hid.bDescriptorType != USB_DT_HID) {
+ 				dbg_ep0 (3, "[%d] interface is not HID",
+-					 bNumInterface);
++						bNumInterface);
+ 				return -1;
+ 			}
+ 			/* copy descriptor for this class */
+ 			copy_config (urb, class_descriptor,
+-				     class_descriptor->descriptor.hid.bLength,
+-				     max);
++					class_descriptor->descriptor.hid.bLength,
++					max);
+ #endif
+ 		}
++#endif /* CONFIG_USB_DFU */
+ 		break;
+ 	case USB_DESCRIPTOR_TYPE_REPORT:
+ 		{
+@@ -315,13 +340,13 @@ static int ep0_get_descriptor (struct usb_device_instance *device,
+ 			struct usb_class_report_descriptor *report_descriptor;
+ 
+ 			if (!(report_descriptor =
+-			      usbd_device_class_report_descriptor_index
+-			      (device, port, 0, bNumInterface,
+-			       bAlternateSetting, class))
+-			    || report_descriptor->bDescriptorType !=
+-			    USB_DT_REPORT) {
++						usbd_device_class_report_descriptor_index
++						(device, port, 0, bNumInterface,
++						 bAlternateSetting, class))
++					|| report_descriptor->bDescriptorType !=
++					USB_DT_REPORT) {
+ 				dbg_ep0 (3, "[%d] descriptor is not REPORT",
+-					 bNumInterface);
++						bNumInterface);
+ 				return -1;
+ 			}
+ 			/* copy report descriptor for this class */
+@@ -329,9 +354,9 @@ static int ep0_get_descriptor (struct usb_device_instance *device,
+ 			if (max - urb->actual_length > 0) {
+ 				int length =
+ 					MIN (report_descriptor->wLength,
+-					     max - urb->actual_length);
++							max - urb->actual_length);
+ 				memcpy (urb->buffer + urb->actual_length,
+-					&report_descriptor->bData[0], length);
++						&report_descriptor->bData[0], length);
+ 				urb->actual_length += length;
+ 			}
+ #endif
+@@ -353,12 +378,12 @@ static int ep0_get_descriptor (struct usb_device_instance *device,
+ 		 urb->buffer, urb->buffer_length, urb->actual_length,
+ 		 device->bus->endpoint_array[0].tx_packetSize);
+ /*
+-    if ((urb->actual_length < max) && !(urb->actual_length % device->bus->endpoint_array[0].tx_packetSize)) {
++   if ((urb->actual_length < max) && !(urb->actual_length % device->bus->endpoint_array[0].tx_packetSize)) {
+ 	dbg_ep0(0, "adding null byte");
+ 	urb->buffer[urb->actual_length++] = 0;
+ 	dbg_ep0(0, "urb: buffer_length: %2d actual_length: %2d packet size: %2d",
+ 		urb->buffer_length, urb->actual_length device->bus->endpoint_array[0].tx_packetSize);
+-    }
++		}
+ */
+ 	return 0;
+ 
+@@ -403,6 +428,25 @@ int ep0_recv_setup (struct urb *urb)
+ 		 le16_to_cpu (request->wLength),
+ 		 USBD_DEVICE_REQUESTS (request->bRequest));
+ 
++#ifdef CONFIG_USB_DFU
++	if ((request->bmRequestType & 0x3f) == USB_TYPE_DFU &&
++			(device->dfu_state != DFU_STATE_appIDLE ||
++			 le16_to_cpu(request->wIndex) == CONFIG_USBD_DFU_INTERFACE)) {
++		int rc = dfu_ep0_handler(urb);
++		switch (rc) {
++			case DFU_EP0_NONE:
++			case DFU_EP0_UNHANDLED:
++				break;
++			case DFU_EP0_ZLP:
++			case DFU_EP0_DATA:
++				return 0;
++			case DFU_EP0_STALL:
++				//return -1;
++				return 0;
++		}
++	}
++#endif /* CONFIG_USB_DFU */
++
+ 	/* handle USB Standard Request (c.f. USB Spec table 9-2) */
+ 	if ((request->bmRequestType & USB_REQ_TYPE_MASK) != 0) {
+ 		if(device->device_state <= STATE_CONFIGURED){
+@@ -580,7 +624,9 @@ int ep0_recv_setup (struct urb *urb)
+ 			device->interface = le16_to_cpu (request->wIndex);
+ 			device->alternate = le16_to_cpu (request->wValue);
+ 			/*dbg_ep0(2, "set interface: %d alternate: %d", device->interface, device->alternate); */
+-			serial_printf ("DEVICE_SET_INTERFACE.. event?\n");
++			usbd_device_event_irq(device, DEVICE_SET_INTERFACE,
++					(request->wIndex << 16 | request->wValue));
++
+ 			return 0;
+ 
+ 		case USB_REQ_GET_STATUS:
+diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
+index 77e217f..8d68dd2 100644
+--- a/drivers/usb/host/Makefile
++++ b/drivers/usb/host/Makefile
+@@ -48,6 +48,7 @@ COBJS-$(CONFIG_USB_EHCI_IXP4XX) += ehci-ixp.o
+ COBJS-$(CONFIG_USB_EHCI_KIRKWOOD) += ehci-kirkwood.o
+ COBJS-$(CONFIG_USB_EHCI_PCI) += ehci-pci.o
+ COBJS-$(CONFIG_USB_EHCI_VCT) += ehci-vct.o
++COBJS-$(CONFIG_USB_EHCI_LPC313X) += ehci-lpc313x.o
+ 
+ COBJS	:= $(COBJS-y)
+ SRCS	:= $(COBJS:.o=.c)
+diff --git a/fs/ext2/dev.c b/fs/ext2/dev.c
+index 874e211..f2cd9af 100644
+--- a/fs/ext2/dev.c
++++ b/fs/ext2/dev.c
+@@ -23,7 +23,7 @@
+  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+  */
+ 
+-
++#define DEBUG
+ #include <common.h>
+ #include <config.h>
+ #include <ext2fs.h>
+diff --git a/fs/ext2/ext2fs.c b/fs/ext2/ext2fs.c
+index e119e13..c31164f 100644
+--- a/fs/ext2/ext2fs.c
++++ b/fs/ext2/ext2fs.c
+@@ -22,6 +22,7 @@
+  *  along with this program; if not, write to the Free Software
+  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+  */
++#define DEBUG
+ 
+ #include <common.h>
+ #include <ext2fs.h>
+diff --git a/include/usbdevice.h b/include/usbdevice.h
+index 4171636..434879c 100644
+--- a/include/usbdevice.h
++++ b/include/usbdevice.h
+@@ -33,7 +33,7 @@
+ 
+ #include <common.h>
+ #include "usbdescriptors.h"
+-
++#include <usb_dfu_descriptors.h>
+ 
+ #define MAX_URBS_QUEUED 5
+ 
+@@ -467,7 +467,11 @@ typedef struct urb_link {
+  * function driver to inform it that data has arrived.
+  */
+ 
++#ifdef CONFIG_USB_DFU
++#define URB_BUF_SIZE (128 + CONFIG_USBD_DFU_XFER_SIZE)
++#else
+ #define URB_BUF_SIZE 128 /* in linux we'd malloc this, but in u-boot we prefer static data */
++#endif
+ struct urb {
+ 
+ 	struct usb_endpoint_instance *endpoint;
+@@ -595,6 +599,12 @@ struct usb_device_instance {
+ 	unsigned long usbd_rxtx_timestamp;
+ 	unsigned long usbd_last_rxtx_timestamp;
+ 
++#ifdef CONFIG_USB_DFU
++        const struct usb_device_descriptor *dfu_dev_desc;
++        const struct _dfu_desc *dfu_cfg_desc;
++        enum dfu_state dfu_state;
++        u_int8_t dfu_status;
++#endif
+ };
+ 
+ /* Bus Interface configuration structure
+@@ -624,6 +634,8 @@ extern char *usbd_device_status[];
+ extern char *usbd_device_requests[];
+ extern char *usbd_device_descriptors[];
+ 
++extern struct usb_string_descriptor **usb_strings;
++
+ void urb_link_init (urb_link * ul);
+ void urb_detach (struct urb *urb);
+ urb_link *first_urb_link (urb_link * hd);
+diff --git a/lib/Makefile b/lib/Makefile
+index 54708c2..9f6d02c 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -24,6 +24,7 @@
+ include $(TOPDIR)/config.mk
+ 
+ LIB	= $(obj)libgeneric.o
++COBJS-y += crc32.o
+ 
+ ifndef CONFIG_SPL_BUILD
+ COBJS-$(CONFIG_ADDR_MAP) += addr_map.o
+@@ -32,11 +33,8 @@ COBJS-$(CONFIG_BZIP2) += bzlib_crctable.o
+ COBJS-$(CONFIG_BZIP2) += bzlib_decompress.o
+ COBJS-$(CONFIG_BZIP2) += bzlib_randtable.o
+ COBJS-$(CONFIG_BZIP2) += bzlib_huffman.o
+-COBJS-$(CONFIG_USB_TTY) += circbuf.o
+ COBJS-y += crc7.o
+ COBJS-y += crc16.o
+-COBJS-y += crc32.o
+-COBJS-y += display_options.o
+ COBJS-y += errno.o
+ COBJS-$(CONFIG_OF_CONTROL) += fdtdec.o
+ COBJS-$(CONFIG_GZIP) += gunzip.o
+@@ -51,6 +49,8 @@ COBJS-$(CONFIG_SHA256) += sha256.o
+ COBJS-y	+= strmhz.o
+ COBJS-$(CONFIG_RBTREE)	+= rbtree.o
+ endif
++COBJS-$(CONFIG_USB_TTY) += circbuf.o
++COBJS-y += display_options.o
+ 
+ COBJS-y += ctype.o
+ COBJS-y += div64.o
+diff --git a/spl/Makefile b/spl/Makefile
+index 6ac42a2..6ac70eb 100644
+--- a/spl/Makefile
++++ b/spl/Makefile
+@@ -57,6 +57,7 @@ LIBS-$(CONFIG_SPL_NAND_SUPPORT) += drivers/mtd/nand/libnand.o
+ LIBS-$(CONFIG_SPL_ONENAND_SUPPORT) += drivers/mtd/onenand/libonenand.o
+ LIBS-$(CONFIG_SPL_DMA_SUPPORT) += drivers/dma/libdma.o
+ LIBS-$(CONFIG_SPL_POST_MEM_SUPPORT) += post/drivers/memory.o
++LIBS-$(CONFIG_SPL_USB_GADGET_SUPPORT) += drivers/usb/gadget/libusb_gadget.o
+ 
+ ifeq ($(SOC),omap3)
+ LIBS-y += $(CPUDIR)/omap-common/libomap-common.o
