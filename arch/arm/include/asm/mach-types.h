@@ -11,6 +11,9 @@
 extern unsigned int __machine_arch_type;
 #endif
 
+#define MACH_TYPE_EA3152               9996
+#define MACH_TYPE_EA313X               9997
+
 /* see arch/arm/kernel/arch.c for a description of these */
 #define MACH_TYPE_EBSA110              0
 #define MACH_TYPE_RISCPC               1
@@ -14220,6 +14223,30 @@ extern unsigned int __machine_arch_type;
 # define machine_is_omap5_sevm()      (machine_arch_type == MACH_TYPE_OMAP5_SEVM)
 #else
 # define machine_is_omap5_sevm()      (0)
+#endif
+
+#ifdef CONFIG_MACH_EA313X
+# ifdef machine_arch_type
+#  undef machine_arch_type
+#  define machine_arch_type	__machine_arch_type
+# else
+#  define machine_arch_type	MACH_TYPE_EA313X
+# endif
+# define machine_is_ea313x()	(machine_arch_type == MACH_TYPE_EA313X)
+#else
+# define machine_is_ea313x()	(0)
+#endif
+
+#ifdef CONFIG_MACH_EA3152
+# ifdef machine_arch_type
+#  undef machine_arch_type
+#  define machine_arch_type	__machine_arch_type
+# else
+#  define machine_arch_type	MACH_TYPE_EA3152
+# endif
+# define machine_is_ea3152()	(machine_arch_type == MACH_TYPE_EA3152)
+#else
+# define machine_is_ea3152()	(0)
 #endif
 
 /*

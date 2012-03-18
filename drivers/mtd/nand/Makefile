@@ -31,7 +31,7 @@ ifdef CONFIG_SPL_NAND_SIMPLE
 COBJS-y += nand_spl_simple.o
 endif
 ifdef CONFIG_SPL_NAND_LOAD
-COBJS-y	+= nand_spl_load.o
+COBJS-y += nand_spl_load.o
 endif
 else
 COBJS-y += nand.o
@@ -63,6 +63,7 @@ COBJS-$(CONFIG_NAND_SPEAR) += spr_nand.o
 COBJS-$(CONFIG_NAND_OMAP_GPMC) += omap_gpmc.o
 COBJS-$(CONFIG_NAND_PLAT) += nand_plat.o
 endif
+COBJS-$(CONFIG_NAND_LPC313X) += lpc313x_nand.o
 
 COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)

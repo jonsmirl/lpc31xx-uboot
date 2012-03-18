@@ -64,6 +64,13 @@ _start:
 	b	reset
 #endif
 #ifdef CONFIG_SPL_BUILD
+#ifdef CONFIG_LPC313x_BOOT_HEADER
+        .word 0x41676d69        /* image magic number, imgA */
+        .word 0,0,0,0,0
+        .word 0x0000000A        /*Plain text no CRC check*/
+	.word (__initial_boot_image_size)       /* image length */
+        .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+#else
 /* No exception handlers in preloader */
 	ldr	pc, _hang
 	ldr	pc, _hang
@@ -83,6 +90,7 @@ _hang:
 	.word	0x12345678
 	.word	0x12345678
 	.word	0x12345678
+#endif
 #else
 	ldr	pc, _undefined_instruction
 	ldr	pc, _software_interrupt
@@ -230,6 +238,7 @@ relocate_code:
 stack_setup:
 	mov	sp, r4
 
+	mov	r9, #0x00000000		/* relocation offset starts at zero */
 	adr	r0, _start
 	sub	r9, r6, r0		/* r9 <- relocation offset */
 	cmp	r0, r6
@@ -292,7 +301,9 @@ clear_bss:
 	ldr	r1, =__bss_end__
 #else
 	ldr	r0, _bss_start_ofs
+//	add	r0, r0, r9
 	ldr	r1, _bss_end_ofs
+//	add	r1, r1, r9
 	mov	r4, r6			/* reloc addr */
 	add	r0, r0, r4
 	add	r1, r1, r4

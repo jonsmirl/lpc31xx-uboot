@@ -264,7 +264,7 @@ dm9000_reset(void)
 	/* Step 1: Power internal PHY by writing 0 to GPIO0 pin */
 	DM9000_iow(DM9000_GPR, 0);
 	/* Step 2: Software reset */
-	DM9000_iow(DM9000_NCR, (NCR_LBK_INT_MAC | NCR_RST));
+	DM9000_iow(DM9000_NCR, NCR_RST);
 
 	do {
 		DM9000_DBG("resetting the DM9000, 1st reset\n");
@@ -272,7 +272,7 @@ dm9000_reset(void)
 	} while (DM9000_ior(DM9000_NCR) & 1);
 
 	DM9000_iow(DM9000_NCR, 0);
-	DM9000_iow(DM9000_NCR, (NCR_LBK_INT_MAC | NCR_RST)); /* Issue a second reset */
+	DM9000_iow(DM9000_NCR, NCR_RST); /* Issue a second reset */
 
 	do {
 		DM9000_DBG("resetting the DM9000, 2nd reset\n");
@@ -372,7 +372,7 @@ static int dm9000_init(struct eth_device *dev, bd_t *bd)
 	while (!(dm9000_phy_read(1) & 0x20)) {	/* autonegation complete bit */
 		udelay(1000);
 		i++;
-		if (i == 10000) {
+		if (i == 1000000) {
 			printf("could not establish link\n");
 			return 0;
 		}
