@@ -37,6 +37,10 @@ static void cache_flush(void);
 
 int cleanup_before_linux (void)
 {
+#ifdef CONFIG_USB_DEVICE
+	extern void udc_shutdown (void);
+	udc_shutdown();
+#endif
 	/*
 	 * this function is called just before we call linux
 	 * it prepares the processor for linux
