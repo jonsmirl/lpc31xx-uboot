@@ -2540,7 +2540,7 @@ static void nand_flash_detect_non_onfi(struct mtd_info *mtd,
 /*
  * Get the flash and manufacturer id and lookup if the type is supported
  */
-static const struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
+const struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
 						  struct nand_chip *chip,
 						  int busw,
 						  int *maf_id, int *dev_id,
