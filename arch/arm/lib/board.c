@@ -38,6 +38,8 @@
  * FIQ Stack: 00ebef7c
  */
 
+#define DEBUG
+
 #include <common.h>
 #include <command.h>
 #include <malloc.h>
@@ -528,7 +530,6 @@ void board_init_r(gd_t *id, ulong dest_addr)
 	AT91F_DataflashInit();
 	dataflash_print_info();
 #endif
-
 	/* initialize environment */
 	env_relocate();
 

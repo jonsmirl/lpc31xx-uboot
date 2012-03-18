@@ -51,7 +51,13 @@
  */
 
 #include <common.h>
+DECLARE_GLOBAL_DATA_PTR;
+
 #include <usbdevice.h>
+
+#ifdef CONFIG_USB_DFU
+#include <usb_dfu.h>
+#endif
 
 #if 0
 #define dbg_ep0(lvl,fmt,args...) serial_printf("[%s] %s:%d: "fmt"\n",__FILE__,__FUNCTION__,__LINE__,##args)
@@ -274,8 +280,26 @@ static int ep0_get_descriptor (struct usb_device_instance *device,
 	case USB_DESCRIPTOR_TYPE_ENDPOINT:
 		serial_printf("USB_DESCRIPTOR_TYPE_ENDPOINT - error not implemented\n");
 		return -1;
+	/* This really means "Class Specific Descriptor #1 == USB_DT_DFU */
 	case USB_DESCRIPTOR_TYPE_HID:
+#ifdef CONFIG_USB_DFU
 		{
+			int bNumInterface =
+				le16_to_cpu(urb->device_request.wIndex);
+
+			/* In runtime mode, we only respond to the DFU INTERFACE,
+			 * whereas in DFU mode, we respond for all intrfaces */
+			if (device->dfu_state != DFU_STATE_appIDLE &&
+					device->dfu_state != DFU_STATE_appDETACH ||
+					bNumInterface == CONFIG_USBD_DFU_INTERFACE) {
+				urb->actual_length = sizeof(struct usb_dfu_func_descriptor);
+				memcpy(urb->buffer,(void *)&device->dfu_cfg_desc->func_dfu,
+						urb->actual_length);
+			} else
+				return -1;
+		}
+#else /* CONFIG_USB_DFU */
+
 			serial_printf("USB_DESCRIPTOR_TYPE_HID - error not implemented\n");
 			return -1;	/* unsupported at this time */
 #if 0
@@ -286,22 +310,23 @@ static int ep0_get_descriptor (struct usb_device_instance *device,
 			struct usb_class_descriptor *class_descriptor;
 
 			if (!(class_descriptor =
-			      usbd_device_class_descriptor_index (device,
-								  port, 0,
-								  bNumInterface,
-								  bAlternateSetting,
-								  class))
-			    || class_descriptor->descriptor.hid.bDescriptorType != USB_DT_HID) {
+						usbd_device_class_descriptor_index (device,
+							port, 0,
+							bNumInterface,
+							bAlternateSetting,
+							class))
+					|| class_descriptor->descriptor.hid.bDescriptorType != USB_DT_HID) {
 				dbg_ep0 (3, "[%d] interface is not HID",
-					 bNumInterface);
+						bNumInterface);
 				return -1;
 			}
 			/* copy descriptor for this class */
 			copy_config (urb, class_descriptor,
-				     class_descriptor->descriptor.hid.bLength,
-				     max);
+					class_descriptor->descriptor.hid.bLength,
+					max);
 #endif
 		}
+#endif /* CONFIG_USB_DFU */
 		break;
 	case USB_DESCRIPTOR_TYPE_REPORT:
 		{
@@ -315,13 +340,13 @@ static int ep0_get_descriptor (struct usb_device_instance *device,
 			struct usb_class_report_descriptor *report_descriptor;
 
 			if (!(report_descriptor =
-			      usbd_device_class_report_descriptor_index
-			      (device, port, 0, bNumInterface,
-			       bAlternateSetting, class))
-			    || report_descriptor->bDescriptorType !=
-			    USB_DT_REPORT) {
+						usbd_device_class_report_descriptor_index
+						(device, port, 0, bNumInterface,
+						 bAlternateSetting, class))
+					|| report_descriptor->bDescriptorType !=
+					USB_DT_REPORT) {
 				dbg_ep0 (3, "[%d] descriptor is not REPORT",
-					 bNumInterface);
+						bNumInterface);
 				return -1;
 			}
 			/* copy report descriptor for this class */
@@ -329,9 +354,9 @@ static int ep0_get_descriptor (struct usb_device_instance *device,
 			if (max - urb->actual_length > 0) {
 				int length =
 					MIN (report_descriptor->wLength,
-					     max - urb->actual_length);
+							max - urb->actual_length);
 				memcpy (urb->buffer + urb->actual_length,
-					&report_descriptor->bData[0], length);
+						&report_descriptor->bData[0], length);
 				urb->actual_length += length;
 			}
 #endif
@@ -353,12 +378,12 @@ static int ep0_get_descriptor (struct usb_device_instance *device,
 		 urb->buffer, urb->buffer_length, urb->actual_length,
 		 device->bus->endpoint_array[0].tx_packetSize);
 /*
-    if ((urb->actual_length < max) && !(urb->actual_length % device->bus->endpoint_array[0].tx_packetSize)) {
+   if ((urb->actual_length < max) && !(urb->actual_length % device->bus->endpoint_array[0].tx_packetSize)) {
 	dbg_ep0(0, "adding null byte");
 	urb->buffer[urb->actual_length++] = 0;
 	dbg_ep0(0, "urb: buffer_length: %2d actual_length: %2d packet size: %2d",
 		urb->buffer_length, urb->actual_length device->bus->endpoint_array[0].tx_packetSize);
-    }
+		}
 */
 	return 0;
 
@@ -402,6 +427,25 @@ int ep0_recv_setup (struct urb *urb)
 		 le16_to_cpu (request->wValue), le16_to_cpu (request->wIndex),
 		 le16_to_cpu (request->wLength),
 		 USBD_DEVICE_REQUESTS (request->bRequest));
+
+#ifdef CONFIG_USB_DFU
+	if ((request->bmRequestType & 0x3f) == USB_TYPE_DFU &&
+			(device->dfu_state != DFU_STATE_appIDLE ||
+			 le16_to_cpu(request->wIndex) == CONFIG_USBD_DFU_INTERFACE)) {
+		int rc = dfu_ep0_handler(urb);
+		switch (rc) {
+			case DFU_EP0_NONE:
+			case DFU_EP0_UNHANDLED:
+				break;
+			case DFU_EP0_ZLP:
+			case DFU_EP0_DATA:
+				return 0;
+			case DFU_EP0_STALL:
+				//return -1;
+				return 0;
+		}
+	}
+#endif /* CONFIG_USB_DFU */
 
 	/* handle USB Standard Request (c.f. USB Spec table 9-2) */
 	if ((request->bmRequestType & USB_REQ_TYPE_MASK) != 0) {
@@ -580,7 +624,9 @@ int ep0_recv_setup (struct urb *urb)
 			device->interface = le16_to_cpu (request->wIndex);
 			device->alternate = le16_to_cpu (request->wValue);
 			/*dbg_ep0(2, "set interface: %d alternate: %d", device->interface, device->alternate); */
-			serial_printf ("DEVICE_SET_INTERFACE.. event?\n");
+			usbd_device_event_irq(device, DEVICE_SET_INTERFACE,
+					(request->wIndex << 16 | request->wValue));
+
 			return 0;
 
 		case USB_REQ_GET_STATUS:
