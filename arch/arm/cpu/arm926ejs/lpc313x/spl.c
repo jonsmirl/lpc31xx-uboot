@@ -464,8 +464,6 @@ void board_init_r(gd_t *id, ulong dummy)
 
 	gd = id;
 
-	mem_malloc_init (_TEXT_BASE - CONFIG_SYS_MALLOC_LEN,
-			CONFIG_SYS_MALLOC_LEN);
 	/* Initialize Timer0 */
 	timer_init1();
 
