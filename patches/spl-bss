@@ -1,5 +1,5 @@
 Bottom: 32c7d1e18bc63d8b8868da36ce265d7fd15e6c24
-Top:    32c7d1e18bc63d8b8868da36ce265d7fd15e6c24
+Top:    15fdf8277096a612c84daf19f8cfdf09d896bc83
 Author: Jon Smirl <jonsmirl@terra>
 Date:   2012-03-19 21:10:40 -0400
 
@@ -8,4 +8,31 @@ Tighten up the SPL BSS definition
 
 ---
 
-
+diff --git a/arch/arm/cpu/arm926ejs/lpc313x/spl.c b/arch/arm/cpu/arm926ejs/lpc313x/spl.c
+index 4ba353b..cecc4f6 100644
+--- a/arch/arm/cpu/arm926ejs/lpc313x/spl.c
++++ b/arch/arm/cpu/arm926ejs/lpc313x/spl.c
+@@ -464,8 +464,6 @@ void board_init_r(gd_t *id, ulong dummy)
+ 
+ 	gd = id;
+ 
+-	mem_malloc_init (_TEXT_BASE - CONFIG_SYS_MALLOC_LEN,
+-			CONFIG_SYS_MALLOC_LEN);
+ 	/* Initialize Timer0 */
+ 	timer_init1();
+ 
+diff --git a/arch/arm/cpu/arm926ejs/lpc313x/u-boot-spl.lds b/arch/arm/cpu/arm926ejs/lpc313x/u-boot-spl.lds
+index 85dd87b..83fde48 100644
+--- a/arch/arm/cpu/arm926ejs/lpc313x/u-boot-spl.lds
++++ b/arch/arm/cpu/arm926ejs/lpc313x/u-boot-spl.lds
+@@ -73,8 +73,8 @@ SECTIONS
+ 
+ 	.bss __rel_dyn_start (OVERLAY) : {
+ 		__bss_start = .;
+-		*(.bss)
++		*(.bss*)
+ 		 . = ALIGN(4);
+ 		__bss_end__ = .;
+-	} >.sdram
++	} >.sram
+ }
