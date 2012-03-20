@@ -73,8 +73,8 @@ SECTIONS
 
 	.bss __rel_dyn_start (OVERLAY) : {
 		__bss_start = .;
-		*(.bss)
+		*(.bss*)
 		 . = ALIGN(4);
 		__bss_end__ = .;
-	} >.sdram
+	} >.sram
 }
