@@ -1,0 +1,11 @@
+Bottom: 32c7d1e18bc63d8b8868da36ce265d7fd15e6c24
+Top:    32c7d1e18bc63d8b8868da36ce265d7fd15e6c24
+Author: Jon Smirl <jonsmirl@terra>
+Date:   2012-03-19 21:10:40 -0400
+
+Tighten up the SPL BSS definition
+
+
+---
+
+
