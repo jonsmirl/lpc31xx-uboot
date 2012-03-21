@@ -29,6 +29,7 @@ include $(TOPDIR)/config.mk
 
 LIB	= $(obj)lib$(BOARD).o
 
+SOBJS	= lowlevel_init.o
 COBJS	:= ea3131.o
 
 SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c)

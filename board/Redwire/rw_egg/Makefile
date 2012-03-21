@@ -1,6 +1,10 @@
 #
-# (C) Copyright 2000-2006
+# (C) Copyright 2003-2008
 # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
+#
+# (C) Copyright 2008
+# Stelian Pop <stelian.pop@leadtechdesign.com>
+# Lead Tech Design <www.leadtechdesign.com>
 #
 # See file CREDITS for list of people who contributed to this
 # project.
@@ -12,7 +16,7 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
@@ -23,35 +27,23 @@
 
 include $(TOPDIR)/config.mk
 
-LIB	= $(obj)lib$(SOC).o
+LIB	= $(obj)lib$(BOARD).o
 
-COBJS	= timer.o
-COBJS	+= serial.o
-COBJS	+= clock.o
-COBJS	+= mci.o
-COBJS	+= dos_partition.o
-COBJS	+= spi.o
-COBJS   += usbdfu.o
-ifndef CONFIG_SPL_BUILD
-COBJS   += usbpoll.o
-COBJS	+= init.o
-COBJS	+= i2c.o
-COBJS	+= nand_params.o
-COBJS	+= nand_format.o
-COBJS	+= crc32.o
-else
-CFLAGS += -DUBOOT_FILESIZE=$(shell stat -c%s $(TOPDIR)/u-boot.img)
-COBJS	+= spl.o
-endif
+SOBJS	= lowlevel_init.o
+COBJS	:= rw_egg.o
 
 SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c)
-OBJS	:= $(addprefix $(obj),$(COBJS) $(SOBJS))
+OBJS	:= $(addprefix $(obj),$(COBJS))
+SOBJS	:= $(addprefix $(obj),$(SOBJS))
 
-all:	$(obj).depend $(LIB)
+$(LIB):	$(obj).depend $(OBJS) $(SOBJS)
+	$(call cmd_link_o_target, $(OBJS) $(SOBJS))
 
-$(LIB):	$(OBJS)
-	$(call cmd_link_o_target, $(OBJS))
+clean:
+	rm -f $(SOBJS) $(OBJS)
 
+distclean:	clean
+	rm -f $(LIB) core *.bak $(obj).depend
 
 #########################################################################
 
