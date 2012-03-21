@@ -1,5 +1,5 @@
 Bottom: 5b5f08a6caf0def0aa3e31ecd61794ef0a9c6c49
-Top:    32c7d1e18bc63d8b8868da36ce265d7fd15e6c24
+Top:    2df9dd45d6e2962cdebef8aa5cf14b88a2a70cd8
 Author: Jon Smirl <jonsmirl@terra>
 Date:   2012-03-17 22:29:23 -0400
 
@@ -8255,10 +8255,10 @@ index 0000000..482a150
 +TEXT_BASE = 0x33600000
 diff --git a/board/ElecArts/ea3131/ea3131.c b/board/ElecArts/ea3131/ea3131.c
 new file mode 100644
-index 0000000..c88b331
+index 0000000..dc09782
 --- /dev/null
 +++ b/board/ElecArts/ea3131/ea3131.c
-@@ -0,0 +1,211 @@
+@@ -0,0 +1,213 @@
 +/*
 +* (C) Copyright 2007-2008
 +* Stelian Pop <stelian.pop@leadtechdesign.com>
@@ -8417,7 +8417,9 @@ index 0000000..c88b331
 +
 +int board_late_init(void)
 +{
++#if CONFIG_CMD_NAND
 +	prepare_write_nand_params_bbt(1);
++#endif
 +}
 +
 +#ifdef CONFIG_USB_EHCI_LPC313X
