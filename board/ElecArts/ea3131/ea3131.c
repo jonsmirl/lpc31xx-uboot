@@ -156,7 +156,9 @@ int board_init(void)
 
 int board_late_init(void)
 {
+#if CONFIG_CMD_NAND
 	prepare_write_nand_params_bbt(1);
+#endif
 }
 
 #ifdef CONFIG_USB_EHCI_LPC313X
