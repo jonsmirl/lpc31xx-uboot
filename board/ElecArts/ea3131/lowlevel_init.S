@@ -54,7 +54,7 @@ lowlevel_init:
 
 #ifdef CONFIG_EA3152
 	/*
-	 * For LPC3152 board, set IO valtage for 
+	 * For LPC3152 board, set IO voltage for 
 	 * SDRAM to work properly
 	 */
 	bl	setup_sdram_voltage

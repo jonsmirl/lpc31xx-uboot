@@ -25,7 +25,6 @@ include $(TOPDIR)/config.mk
 
 LIB	= $(obj)lib$(SOC).o
 
-SOBJS	= lowlevel_init.o
 COBJS	= timer.o
 COBJS	+= serial.o
 COBJS	+= clock.o
