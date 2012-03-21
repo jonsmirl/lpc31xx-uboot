@@ -1,0 +1,49 @@
+Bottom: 7a44b5300ff317dd0510aea29855afdefcd42515
+Top:    0aeeceef2429ec8ffc511052f35a92d7c755928c
+Author: Jon Smirl <jonsmirl@gmail.com>
+Date:   2012-03-20 20:36:44 -0400
+
+Refresh of spl
+
+---
+
+diff --git a/arch/arm/cpu/arm926ejs/lpc313x/Makefile b/arch/arm/cpu/arm926ejs/lpc313x/Makefile
+index 8b81805..5051ccb 100644
+--- a/arch/arm/cpu/arm926ejs/lpc313x/Makefile
++++ b/arch/arm/cpu/arm926ejs/lpc313x/Makefile
+@@ -25,7 +25,6 @@ include $(TOPDIR)/config.mk
+ 
+ LIB	= $(obj)lib$(SOC).o
+ 
+-SOBJS	= lowlevel_init.o
+ COBJS	= timer.o
+ COBJS	+= serial.o
+ COBJS	+= clock.o
+diff --git a/board/ElecArts/ea3131/Makefile b/board/ElecArts/ea3131/Makefile
+index 76dae10..e5a42d5 100644
+--- a/board/ElecArts/ea3131/Makefile
++++ b/board/ElecArts/ea3131/Makefile
+@@ -29,6 +29,7 @@ include $(TOPDIR)/config.mk
+ 
+ LIB	= $(obj)lib$(BOARD).o
+ 
++SOBJS	= lowlevel_init.o
+ COBJS	:= ea3131.o
+ 
+ SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c)
+diff --git a/arch/arm/cpu/arm926ejs/lpc313x/lowlevel_init.S b/board/ElecArts/ea3131/lowlevel_init.S
+similarity index 99%
+rename from arch/arm/cpu/arm926ejs/lpc313x/lowlevel_init.S
+rename to board/ElecArts/ea3131/lowlevel_init.S
+index 1038390..1e276dd 100644
+--- a/arch/arm/cpu/arm926ejs/lpc313x/lowlevel_init.S
++++ b/board/ElecArts/ea3131/lowlevel_init.S
+@@ -54,7 +54,7 @@ lowlevel_init:
+ 
+ #ifdef CONFIG_EA3152
+ 	/*
+-	 * For LPC3152 board, set IO valtage for 
++	 * For LPC3152 board, set IO voltage for 
+ 	 * SDRAM to work properly
+ 	 */
+ 	bl	setup_sdram_voltage
