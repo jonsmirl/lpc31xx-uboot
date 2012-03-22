@@ -1,5 +1,5 @@
 Bottom: 5b5f08a6caf0def0aa3e31ecd61794ef0a9c6c49
-Top:    7a46d80468c0272c8cc1c710be05ea251cbc06bb
+Top:    bdda9f3a0f1acb7c3b7fce28f928c1bc6faab325
 Author: Jon Smirl <jonsmirl@terra>
 Date:   2012-03-17 22:29:23 -0400
 
@@ -11316,7 +11316,7 @@ index e119e13..c31164f 100644
  #include <ext2fs.h>
 diff --git a/include/configs/ea3131.h b/include/configs/ea3131.h
 new file mode 100644
-index 0000000..ff2b028
+index 0000000..651210f
 --- /dev/null
 +++ b/include/configs/ea3131.h
 @@ -0,0 +1,332 @@
@@ -11493,7 +11493,7 @@ index 0000000..ff2b028
 +"dt_addr=0x32000000\0" \
 +"rd_addr=0x32100000\0" \
 +"usbtty=cdc_acm\0" \
-+"ramargs=setenv bootargs console=ttyS0,115200n8 root=/dev/mmcblk0p3 init=/etc/preinit rw loglevel=7\0" \
++"ramargs=setenv bootargs console=ttyS0,115200n8 root=/dev/mmcblk0p3 rootwait init=/etc/preinit rw loglevel=7\0" \
 +"serverip=192.168.1.48\0" \
 +"nfsargs=setenv bootargs console=ttyS0,115200n8 root=/dev/nfs init=/etc/preinit rw nfsroot=${serverip}:${rootpath} ip=dhcp loglevel=7\0" \
 +"rootpath=/tftpboot/arm\0" \
