@@ -171,7 +171,7 @@
 "dt_addr=0x32000000\0" \
 "rd_addr=0x32100000\0" \
 "usbtty=cdc_acm\0" \
-"ramargs=setenv bootargs console=ttyS0,115200n8 root=/dev/mmcblk0p3 init=/etc/preinit rw loglevel=7\0" \
+"ramargs=setenv bootargs console=ttyS0,115200n8 root=/dev/mmcblk0p3 rootwait init=/etc/preinit rw loglevel=7\0" \
 "serverip=192.168.1.48\0" \
 "nfsargs=setenv bootargs console=ttyS0,115200n8 root=/dev/nfs init=/etc/preinit rw nfsroot=${serverip}:${rootpath} ip=dhcp loglevel=7\0" \
 "rootpath=/tftpboot/arm\0" \
