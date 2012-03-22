@@ -1,5 +1,5 @@
 Bottom: 5b5f08a6caf0def0aa3e31ecd61794ef0a9c6c49
-Top:    192f7a223097518c76a7464b57970c278459c074
+Top:    7a46d80468c0272c8cc1c710be05ea251cbc06bb
 Author: Jon Smirl <jonsmirl@terra>
 Date:   2012-03-17 22:29:23 -0400
 
@@ -707,10 +707,10 @@ index 0000000..44d04c4
 +}
 diff --git a/arch/arm/cpu/arm926ejs/lpc313x/config.mk b/arch/arm/cpu/arm926ejs/lpc313x/config.mk
 new file mode 100644
-index 0000000..85e9f1f
+index 0000000..2b0ea47
 --- /dev/null
 +++ b/arch/arm/cpu/arm926ejs/lpc313x/config.mk
-@@ -0,0 +1,34 @@
+@@ -0,0 +1,38 @@
 +#
 +# (C) Copyright 2002
 +# Gary Jennejohn, DENX Software Engineering, <garyj@denx.de>
@@ -745,6 +745,10 @@ index 0000000..85e9f1f
 +PLATFORM_RELFLAGS +=$(call cc-option,-mshort-load-bytes,$(call cc-option,-malignment-traps,))
 +
 +USE_PRIVATE_LIBGCC := yes
++
++ifndef CONFIG_SPL_BUILD
++ALL-y	+= $(obj)u-boot.img
++endif
 diff --git a/arch/arm/cpu/arm926ejs/lpc313x/crc32.c b/arch/arm/cpu/arm926ejs/lpc313x/crc32.c
 new file mode 100644
 index 0000000..2b97165
@@ -11312,10 +11316,10 @@ index e119e13..c31164f 100644
  #include <ext2fs.h>
 diff --git a/include/configs/ea3131.h b/include/configs/ea3131.h
 new file mode 100644
-index 0000000..47f5231
+index 0000000..ff2b028
 --- /dev/null
 +++ b/include/configs/ea3131.h
-@@ -0,0 +1,331 @@
+@@ -0,0 +1,332 @@
 +/*
 + * (C) Copyright 2007
 + * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
@@ -11486,9 +11490,10 @@ index 0000000..47f5231
 +#define CONFIG_BOOTDELAY		1
 +#define CONFIG_EXTRA_ENV_SETTINGS	\
 +"loadaddr=0x31000000\0" \
-+"rd_addr=0x32000000\0" \
++"dt_addr=0x32000000\0" \
++"rd_addr=0x32100000\0" \
 +"usbtty=cdc_acm\0" \
-+"ramargs=setenv bootargs console=ttyS0,115200n8 root=/dev/mmcblk0p3 init=/etc/preinit rw ip=182.168.1.180 loglevel=7\0" \
++"ramargs=setenv bootargs console=ttyS0,115200n8 root=/dev/mmcblk0p3 init=/etc/preinit rw loglevel=7\0" \
 +"serverip=192.168.1.48\0" \
 +"nfsargs=setenv bootargs console=ttyS0,115200n8 root=/dev/nfs init=/etc/preinit rw nfsroot=${serverip}:${rootpath} ip=dhcp loglevel=7\0" \
 +"rootpath=/tftpboot/arm\0" \
@@ -11497,7 +11502,7 @@ index 0000000..47f5231
 +"net_boot=dhcp; run nfsargs; bootm $(loadaddr)\0" \
 +"spi_boot= sf probe 0 0 0; sf read $(loadaddr) 0x42000 0x200000; run nfsargs; bootm $(loadaddr)\0" \
 +"nand_boot= nand read $(loadaddr) 0x80000 0x200000; run ramargs; bootm $(loadaddr)\0" \
-+"sdmmc_boot= mmc init; fatload mmc 0 $(loadaddr) $(bootfile); run ramargs; bootm $(loadaddr)\0" \
++"sdmmc_boot= mmc init; fatload mmc 0 $(loadaddr) $(bootfile); fatload mmc 0 $(dt_addr) ea3131.dtb; run ramargs; bootm $(loadaddr) - $(dt_addr)\0" \
 +"usbdfu_boot= usbpoll $(loadaddr); run nfsargs; bootm $(loadaddr)\0" \
 +"usb_boot= usb start; fatload usb 0 $(loadaddr) $(bootfile); run nfsargs; bootm $(loadaddr)\0" \
 +"uart_boot= loady; run nfsargs; bootm $(loadaddr)\0" \
