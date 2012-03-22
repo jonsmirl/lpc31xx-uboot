@@ -1,0 +1,22 @@
+Bottom: df9566f2e48f4bbf2d90fac4beba92673bf52f60
+Top:    e3522e79dcd82adbff601e20f4ef1a978b359d32
+Author: Jon Smirl <jonsmirl@gmail.com>
+Date:   2012-03-22 19:51:40 -0400
+
+Refresh of spl
+
+---
+
+diff --git a/include/configs/ea3131.h b/include/configs/ea3131.h
+index ff2b028..651210f 100644
+--- a/include/configs/ea3131.h
++++ b/include/configs/ea3131.h
+@@ -171,7 +171,7 @@
+ "dt_addr=0x32000000\0" \
+ "rd_addr=0x32100000\0" \
+ "usbtty=cdc_acm\0" \
+-"ramargs=setenv bootargs console=ttyS0,115200n8 root=/dev/mmcblk0p3 init=/etc/preinit rw loglevel=7\0" \
++"ramargs=setenv bootargs console=ttyS0,115200n8 root=/dev/mmcblk0p3 rootwait init=/etc/preinit rw loglevel=7\0" \
+ "serverip=192.168.1.48\0" \
+ "nfsargs=setenv bootargs console=ttyS0,115200n8 root=/dev/nfs init=/etc/preinit rw nfsroot=${serverip}:${rootpath} ip=dhcp loglevel=7\0" \
+ "rootpath=/tftpboot/arm\0" \
