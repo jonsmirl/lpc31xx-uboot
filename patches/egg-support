@@ -1,5 +1,5 @@
 Bottom: 8ebc528dcd4ca7322d8c6307fb0ab102047a1949
-Top:    e3522e79dcd82adbff601e20f4ef1a978b359d32
+Top:    498152a704d464975f8918850896c5dd0a3d43d0
 Author: Jon Smirl <jonsmirl@gmail.com>
 Date:   2012-03-20 20:16:13 -0400
 
@@ -622,7 +622,7 @@ index 77c385f..8342c43 100644
  tx25                         arm         arm926ejs   tx25                karo           mx25
 diff --git a/include/configs/rw_egg.h b/include/configs/rw_egg.h
 new file mode 100644
-index 0000000..18f0804
+index 0000000..e51d5e8
 --- /dev/null
 +++ b/include/configs/rw_egg.h
 @@ -0,0 +1,328 @@
@@ -799,7 +799,7 @@ index 0000000..18f0804
 +"loadaddr=0x31000000\0" \
 +"rd_addr=0x32000000\0" \
 +"usbtty=cdc_acm\0" \
-+"ramargs=setenv bootargs console=ttyS0,115200n8 root=/dev/mmcblk0p3 init=/etc/preinit rw loglevel=7\0" \
++"ramargs=setenv bootargs console=ttyS0,115200n8 root=/dev/mmcblk0p3 rootwait init=/etc/preinit rw loglevel=7\0" \
 +"serverip=192.168.1.48\0" \
 +"nfsargs=setenv bootargs console=ttyS0,115200n8 root=/dev/nfs init=/etc/preinit rw nfsroot=${serverip}:${rootpath} ip=dhcp loglevel=7\0" \
 +"rootpath=/tftpboot/arm\0" \
