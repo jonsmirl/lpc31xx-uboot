@@ -32,3 +32,7 @@ PLATFORM_CPPFLAGS += -march=armv5te
 PLATFORM_RELFLAGS +=$(call cc-option,-mshort-load-bytes,$(call cc-option,-malignment-traps,))
 
 USE_PRIVATE_LIBGCC := yes
+
+ifndef CONFIG_SPL_BUILD
+ALL-y	+= $(obj)u-boot.img
+endif

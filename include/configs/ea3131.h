@@ -168,9 +168,10 @@
 #define CONFIG_BOOTDELAY		1
 #define CONFIG_EXTRA_ENV_SETTINGS	\
 "loadaddr=0x31000000\0" \
-"rd_addr=0x32000000\0" \
+"dt_addr=0x32000000\0" \
+"rd_addr=0x32100000\0" \
 "usbtty=cdc_acm\0" \
-"ramargs=setenv bootargs console=ttyS0,115200n8 root=/dev/mmcblk0p3 init=/etc/preinit rw ip=182.168.1.180 loglevel=7\0" \
+"ramargs=setenv bootargs console=ttyS0,115200n8 root=/dev/mmcblk0p3 rootwait init=/etc/preinit rw loglevel=7\0" \
 "serverip=192.168.1.48\0" \
 "nfsargs=setenv bootargs console=ttyS0,115200n8 root=/dev/nfs init=/etc/preinit rw nfsroot=${serverip}:${rootpath} ip=dhcp loglevel=7\0" \
 "rootpath=/tftpboot/arm\0" \
@@ -179,7 +180,7 @@
 "net_boot=dhcp; run nfsargs; bootm $(loadaddr)\0" \
 "spi_boot= sf probe 0 0 0; sf read $(loadaddr) 0x42000 0x200000; run nfsargs; bootm $(loadaddr)\0" \
 "nand_boot= nand read $(loadaddr) 0x80000 0x200000; run ramargs; bootm $(loadaddr)\0" \
-"sdmmc_boot= mmc init; fatload mmc 0 $(loadaddr) $(bootfile); run ramargs; bootm $(loadaddr)\0" \
+"sdmmc_boot= mmc init; fatload mmc 0 $(loadaddr) $(bootfile); fatload mmc 0 $(dt_addr) ea3131.dtb; run ramargs; bootm $(loadaddr) - $(dt_addr)\0" \
 "usbdfu_boot= usbpoll $(loadaddr); run nfsargs; bootm $(loadaddr)\0" \
 "usb_boot= usb start; fatload usb 0 $(loadaddr) $(bootfile); run nfsargs; bootm $(loadaddr)\0" \
 "uart_boot= loady; run nfsargs; bootm $(loadaddr)\0" \
