@@ -35,6 +35,10 @@
 #include <usb/pxa27x_udc.h>
 #elif defined(CONFIG_DW_UDC)
 #include <usb/designware_udc.h>
+#elif defined(CONFIG_LPC313X)
+#include <usb/lpc313x_udc.h>
+#elif defined(CONFIG_SPEAR3XX) || defined(CONFIG_SPEAR600)
+#include <usb/spr_udc.h>
 #endif
 
 #include <version.h>
@@ -83,5 +87,11 @@
 #define STR_DATA_INTERFACE	0x05
 #define STR_CTRL_INTERFACE	0x06
 #define STR_COUNT		0x07
+
+#ifdef CONFIG_USB_DFU
+#define NUM_STRINGS		DFU_STR_COUNT
+#else
+#define NUM_STRINGS		STR_COUNT
+#endif
 
 #endif

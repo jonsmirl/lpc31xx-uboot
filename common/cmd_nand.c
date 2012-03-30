@@ -190,12 +190,25 @@ static int arg_off(const char *arg, int *idx, loff_t *off, loff_t *maxsize)
 static int arg_off_size(int argc, char *const argv[], int *idx,
 			loff_t *off, loff_t *size)
 {
-	int ret;
+	int ret = 0;
 	loff_t maxsize;
 
 	if (argc == 0) {
 		*off = 0;
 		*size = nand_info[*idx].size;
+#ifdef CONFIG_LPC313X
+		printf("\nFor LPC313X based board, Do you want to erase block 0: <y/n>\n");
+		while(1) {
+			ret = getc();
+			if(ret != 0)	
+				break;
+		}
+
+		if(ret != 'y') {
+			*off = 0x20000;
+			*size -= 0x20000;
+		}
+#endif
 		goto print;
 	}
 

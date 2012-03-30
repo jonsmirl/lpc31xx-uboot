@@ -26,12 +26,14 @@ include $(TOPDIR)/config.mk
 LIB	= $(obj)libcommon.o
 
 # core
+COBJS-y += dlmalloc.o
+COBJS-y += image.o
+
 ifndef CONFIG_SPL_BUILD
 COBJS-y += main.o
 COBJS-y += command.o
 COBJS-y += exports.o
 COBJS-$(CONFIG_SYS_HUSH_PARSER) += hush.o
-COBJS-y += image.o
 COBJS-y += s_record.o
 COBJS-$(CONFIG_SERIAL_MULTI) += serial.o
 COBJS-y += xyzModem.o
