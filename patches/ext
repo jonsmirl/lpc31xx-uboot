@@ -1,0 +1,21 @@
+Bottom: d5027a8128e786e4e0a63fdd49f5c80daf616db0
+Top:    d5027a8128e786e4e0a63fdd49f5c80daf616db0
+Author: Jon Smirl <jonsmirl@gmail.com>
+Date:   2012-03-30 11:42:33 -0400
+
+This patch dramatically drops the amount of time u-boot needs to read a
+file from an ext2 partition.  On a typical 2 to 5 MB file (kernels and
+initrds) it goes from tens of seconds to a couple seconds.
+
+All we are doing here is grouping contiguous blocks into one read.
+
+Boot tested on Globalscale Technologies Dreamplug (Kirkwood ARM SoC)
+with three different files.  sha1sums were calculated in Linux
+userspace, and then confirmed after ext2load.
+
+Signed-off-by: Jason Cooper <u-b...@lakedaemon.net>
+
+
+---
+
+
