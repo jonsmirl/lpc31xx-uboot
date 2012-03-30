@@ -1,5 +1,5 @@
-Bottom: 8ebc528dcd4ca7322d8c6307fb0ab102047a1949
-Top:    714303bc7ced222d95a942a9b28e347ff794f6a3
+Bottom: 818938a541fd82b3017a3177d6ba293de17aafea
+Top:    9ce6310021b17bf7aa2453b53ac26545f11f3c2b
 Author: Jon Smirl <jonsmirl@gmail.com>
 Date:   2012-03-29 19:17:12 -0400
 
@@ -25,10 +25,10 @@ similarity index 100%
 rename from board/ElecArts/ea3131/lowlevel_init.S
 rename to board/ea/ea3131/lowlevel_init.S
 diff --git a/boards.cfg b/boards.cfg
-index 77c385f..58adfd5 100644
+index e79af40..f4fa17a 100644
 --- a/boards.cfg
 +++ b/boards.cfg
-@@ -153,8 +153,9 @@ openrd_ultimate              arm         arm926ejs   openrd              Marvell
+@@ -154,8 +154,9 @@ openrd_ultimate              arm         arm926ejs   openrd              Marvell
  rd6281a                      arm         arm926ejs   -                   Marvell        kirkwood
  sheevaplug                   arm         arm926ejs   -                   Marvell        kirkwood
  dockstar                     arm         arm926ejs   -                   Seagate        kirkwood
