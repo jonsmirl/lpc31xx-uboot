@@ -1,5 +1,5 @@
 Bottom: fdc5684af392b6a4482443ca05fc903fc4e4f111
-Top:    fdc5684af392b6a4482443ca05fc903fc4e4f111
+Top:    d5e3ef80ee713f132fd65898d479700c71fdc8bd
 Author: Jon Smirl <jonsmirl@gmail.com>
 Date:   2012-03-30 11:42:33 -0400
 
@@ -18,4 +18,118 @@ Signed-off-by: Jason Cooper <u-b...@lakedaemon.net>
 
 ---
 
-
+diff --git a/fs/ext2/dev.c b/fs/ext2/dev.c
+index f2cd9af..af36a1e 100644
+--- a/fs/ext2/dev.c
++++ b/fs/ext2/dev.c
+@@ -23,7 +23,6 @@
+  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+  */
+ 
+-#define DEBUG
+ #include <common.h>
+ #include <config.h>
+ #include <ext2fs.h>
+diff --git a/fs/ext2/ext2fs.c b/fs/ext2/ext2fs.c
+index 3596b02..25f59ac 100644
+--- a/fs/ext2/ext2fs.c
++++ b/fs/ext2/ext2fs.c
+@@ -22,8 +22,6 @@
+  *  along with this program; if not, write to the Free Software
+  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+  */
+-#define DEBUG
+-
+ #include <common.h>
+ #include <ext2fs.h>
+ #include <malloc.h>
+@@ -421,7 +419,6 @@ int ext2fs_read_file
+ 		if (blknr < 0) {
+ 			return (-1);
+ 		}
+-		blknr = blknr << log2blocksize;
+ 
+ 		/* Last block.  */
+ 		if (i == blockcnt - 1) {
+@@ -439,6 +436,29 @@ int ext2fs_read_file
+ 			blockend -= skipfirst;
+ 		}
+ 
++               /* grab middle blocks in one go */
++               if (i != pos / blocksize && i != blockcnt - 1 && blockcnt > 3) {
++                       int oldblk = blknr;
++                       int blocknxt;
++                       while (i < blockcnt - 1) {
++                               blocknxt = ext2fs_read_block(node, i + 1);
++                               if (blocknxt == (oldblk + 1)) {
++                                       oldblk = blocknxt;
++                                       i++;
++                               } else {
++                                       blocknxt = ext2fs_read_block(node, i);
++                                       break;
++                               }
++                       }
++
++                       if (oldblk == blknr)
++                               blockend = blocksize;
++                       else
++                               blockend = (1 + blocknxt - blknr) * blocksize;
++               }
++
++               blknr = blknr << log2blocksize;
++
+ 		/* If the block number is 0 this block is not stored on disk but
+ 		   is zero filled instead.  */
+ 		if (blknr) {
+@@ -451,7 +471,7 @@ int ext2fs_read_file
+ 		} else {
+ 			memset (buf, 0, blocksize - skipfirst);
+ 		}
+-		buf += blocksize - skipfirst;
++               buf += blockend - skipfirst;
+ 	}
+ 	return (len);
+ }
+diff --git a/include/configs/ea3131.h b/include/configs/ea3131.h
+index 6d641b4..3b2f194 100644
+--- a/include/configs/ea3131.h
++++ b/include/configs/ea3131.h
+@@ -152,7 +152,8 @@
+ #endif
+ 
+ /* Linux boot using network */
+-#define CONFIG_BOOTCOMMAND		"run sdmmc_boot"
++/* #define CONFIG_BOOTCOMMAND		"run sdmmc_boot" */
++#define CONFIG_BOOTCOMMAND		"run tftp_boot"
+ 
+ /*
+  * Serial Driver Console
+@@ -172,13 +173,17 @@
+ "rd_addr=0x32100000\0" \
+ "usbtty=cdc_acm\0" \
+ "ramargs=setenv bootargs console=ttyS0,115200n8 root=/dev/mmcblk0p3 rootwait init=/etc/preinit rw loglevel=8\0" \
+-"serverip=192.168.1.48\0" \
++"serverip=192.168.1.90\0" \
+ "nfsargs=setenv bootargs console=ttyS0,115200n8 root=/dev/nfs init=/etc/preinit rw nfsroot=${serverip}:${rootpath} ip=dhcp loglevel=8\0" \
+-"rootpath=/tftpboot/arm\0" \
++"rootpath=/home/rootfs\0" \
+ "bootfile=uImage\0" \
++"ipaddr=192.168.1.80\0" \
++"tftpbootfile=/srv/tftp/uImage\0" \
++"tftpdtbfile=/srv/tftp/ea3131.dtb\0" \
+ "ramfile=rootfs.ext2.gz.uboot\0" \
+ "net_boot=dhcp; run nfsargs; bootm $(loadaddr)\0" \
+ "spi_boot= sf probe 0 0 0; sf read $(loadaddr) 0x42000 0x200000; run nfsargs; bootm $(loadaddr)\0" \
++"tftp_boot= tftp $(loadaddr) $(tftpbootfile); tftp $(dt_addr) $(tftpdtbfile); run nfsargs; bootm $(loadaddr) - $(dt_addr)\0" \
+ "nand_boot= nand read $(loadaddr) 0x80000 0x200000; run ramargs; bootm $(loadaddr)\0" \
+ "sdmmc_boot= mmc init; fatload mmc 0 $(loadaddr) $(bootfile); fatload mmc 0 $(dt_addr) ea3131.dtb; run ramargs; bootm $(loadaddr) - $(dt_addr)\0" \
+ "usbdfu_boot= usbpoll $(loadaddr); run nfsargs; bootm $(loadaddr)\0" \
+@@ -302,6 +307,8 @@
+ #define CONFIG_SUPPORT_VFAT
+ /*#undef CONFIG_CPU_USBDFU_BOOT*/
+ 
++#define CONFIG_CMD_EXT2			1
++
+ 
+ /*
+  * USB configuration as GADGET
