@@ -152,7 +152,8 @@
 #endif
 
 /* Linux boot using network */
-#define CONFIG_BOOTCOMMAND		"run sdmmc_boot"
+/* #define CONFIG_BOOTCOMMAND		"run sdmmc_boot" */
+#define CONFIG_BOOTCOMMAND		"run tftp_boot"
 
 /*
  * Serial Driver Console
@@ -172,13 +173,17 @@
 "rd_addr=0x32100000\0" \
 "usbtty=cdc_acm\0" \
 "ramargs=setenv bootargs console=ttyS0,115200n8 root=/dev/mmcblk0p3 rootwait init=/etc/preinit rw loglevel=8\0" \
-"serverip=192.168.1.48\0" \
+"serverip=192.168.1.90\0" \
 "nfsargs=setenv bootargs console=ttyS0,115200n8 root=/dev/nfs init=/etc/preinit rw nfsroot=${serverip}:${rootpath} ip=dhcp loglevel=8\0" \
-"rootpath=/tftpboot/arm\0" \
+"rootpath=/home/rootfs\0" \
 "bootfile=uImage\0" \
+"ipaddr=192.168.1.80\0" \
+"tftpbootfile=/srv/tftp/uImage\0" \
+"tftpdtbfile=/srv/tftp/ea3131.dtb\0" \
 "ramfile=rootfs.ext2.gz.uboot\0" \
 "net_boot=dhcp; run nfsargs; bootm $(loadaddr)\0" \
 "spi_boot= sf probe 0 0 0; sf read $(loadaddr) 0x42000 0x200000; run nfsargs; bootm $(loadaddr)\0" \
+"tftp_boot= tftp $(loadaddr) $(tftpbootfile); tftp $(dt_addr) $(tftpdtbfile); run nfsargs; bootm $(loadaddr) - $(dt_addr)\0" \
 "nand_boot= nand read $(loadaddr) 0x80000 0x200000; run ramargs; bootm $(loadaddr)\0" \
 "sdmmc_boot= mmc init; fatload mmc 0 $(loadaddr) $(bootfile); fatload mmc 0 $(dt_addr) ea3131.dtb; run ramargs; bootm $(loadaddr) - $(dt_addr)\0" \
 "usbdfu_boot= usbpoll $(loadaddr); run nfsargs; bootm $(loadaddr)\0" \
@@ -301,6 +306,8 @@
 #define CONFIG_USB_STORAGE
 #define CONFIG_SUPPORT_VFAT
 /*#undef CONFIG_CPU_USBDFU_BOOT*/
+
+#define CONFIG_CMD_EXT2			1
 
 
 /*
